@@ -10,6 +10,8 @@ using Microsoft.Extensions.Configuration;
 using TrainingCenter.Data;
 using TrainingCenter.Entities;
 
+using Microsoft.Extensions.Logging;
+
 // Build configuration object so the console app can read appsettings.json
 IConfiguration configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory()) // Look for files in current folder
@@ -30,6 +32,8 @@ if (string.IsNullOrWhiteSpace(connectionString))
 /// Build DbContextOptions manually for AppDbContext
 var options = new DbContextOptionsBuilder<AppDbContext>()
     .UseSqlServer(connectionString) // Tell EF Core to use SQL Server with this connection string
+    .LogTo(Console.WriteLine, LogLevel.Information)
+    .EnableSensitiveDataLogging()
     .Options;
 
 // Create DbContext instance manually using the configured options
@@ -44,50 +48,103 @@ Console.WriteLine(context.Database.CanConnect()
 
 Console.WriteLine("================================================");
 
+// Run examples
 RetrieveAndPrintStudents(context);
-static void RetrieveAndPrintStudents(AppDbContext context)
+GetActiveStudentsCount(context);
+
+
+
+
+/// <summary>
+/// Example 1:
+/// Retrieve active students
+/// </summary>
+static void RetrieveAndPrintStudents(
+    AppDbContext context)
 {
-    // Build the query first (no execution yet)
+    Console.WriteLine("Example 1 - Retrieve Students");
+    Console.WriteLine("=============================");
+    Console.WriteLine();
+
+
+    // Build query first
     var query = context.Students
+        .Where(s => s.Status == "Active")
         .OrderBy(s => s.StudentId);
 
-    // Show generated SQL before execution
-    PrintGeneratedSql("Students", query.ToQueryString());
+
+    // Preview SQL
+    Console.WriteLine("Preview SQL using ToQueryString():");
+    Console.WriteLine("----------------------------------");
+    Console.WriteLine(query.ToQueryString());
+    Console.WriteLine();
+
 
     // Execute query
     var students = query.ToList();
 
-    // If no data exists, stop here
-    if (students.Count == 0)
-    {
-        Console.WriteLine("No students found in the database.");
-        Console.WriteLine();
-        return;
-    }
 
-    Console.WriteLine("Students List:");
-    Console.WriteLine("--------------");
+    Console.WriteLine(
+        $"Rows Returned: {students.Count}");
 
-    foreach (var student in students)
-    {
-        Console.WriteLine(
-            $"Id: {student.StudentId}, " +
-            $"Name: {student.FirstName} {student.LastName}, " +
-            $"Email: {student.Email}, " +
-            $"Status: {student.Status}, " +
-            $"Phone: {student.PhoneNumber ?? "N/A"}");
-    }
 
     Console.WriteLine();
-    Console.WriteLine($"Total Students: {students.Count}");
     Console.WriteLine(new string('=', 70));
     Console.WriteLine();
 }
 
-static void PrintGeneratedSql(string tableName, string sqlQuery)
+
+
+
+/// <summary>
+/// Example 2:
+/// Show difference between ToQueryString() and Count() runtime SQL
+/// </summary>
+static void GetActiveStudentsCount(
+    AppDbContext context)
 {
-    Console.WriteLine($"Generated SQL Query for {tableName}:");
-    Console.WriteLine(new string('-', 40));
-    Console.WriteLine(sqlQuery);
+    Console.WriteLine("Example 2 - Count Comparison");
+    Console.WriteLine("============================");
+    Console.WriteLine();
+
+
+    // Build query first
+    var query = context.Students
+        .Where(s => s.Status == "Active");
+
+
+    // Preview SQL before Count()
+    Console.WriteLine("Preview SQL using ToQueryString():");
+    Console.WriteLine("----------------------------------");
+    Console.WriteLine(query.ToQueryString());
+    Console.WriteLine();
+
+
+    Console.WriteLine(
+        "Now executing Count()...");
+    Console.WriteLine(
+        "Watch logging output above / below.");
+    Console.WriteLine();
+
+
+    // Actual execution
+    int total = query.Count();
+
+
+    Console.WriteLine(
+        $"Total Active Students: {total}");
+
+
+    Console.WriteLine();
+    Console.WriteLine(
+        "Important Note:");
+    Console.WriteLine(
+        "ToQueryString() previewed SELECT rows query.");
+    Console.WriteLine(
+        "But logging shows final executed COUNT(*) query.");
+
+
+    Console.WriteLine();
+    Console.WriteLine(new string('=', 70));
     Console.WriteLine();
 }
