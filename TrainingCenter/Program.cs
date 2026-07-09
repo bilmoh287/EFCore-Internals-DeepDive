@@ -35,34 +35,22 @@ Console.WriteLine();
 
 
 // Call examples
-Example_First(context);
-Example_FirstOrDefault(context);
-Example_Single(context);
-Example_SingleOrDefault(context);
+FindStudentByIdUSingFind(context);
+FindStudentByIdUSingFirstOrDefault(context);
 
 
-static void Example_First(AppDbContext context)
+static void FindStudentByIdUSingFind(AppDbContext context)
 {
 
-    // Build query first
-    var query = context.Students
-        .Where(s => s.Status == "Active")
-        .OrderBy(s => s.StudentId);
+    var Student = context.Students.Find(1);
+    var Studen2 = context.Students.Find(1);
 
 
-    // Show generated SQL
-    PreviewSQLUsingToQueryString(query.ToQueryString());
+    // Does not upport ToQueryString
+    //PreviewSQLUsingToQueryString(Student.ToQueryString());
 
-
-    // Execute Query
-    var student = query.First();
-
-    // Print results
-    Console.WriteLine("\nActive Students:");
-    Console.WriteLine("----------------");
-
- 
-    Console.WriteLine($"{student.StudentId} - {student.FirstName} {student.LastName}");
+    PrintStudent(Student);
+    PrintStudent(Studen2);
 
 }
 
@@ -70,13 +58,13 @@ static void Example_First(AppDbContext context)
 /// FirstOrDefault() returns the first matching row,
 /// or null if no row exists.
 /// </summary>
-static void Example_FirstOrDefault(AppDbContext context)
+static void FindStudentByIdUSingFirstOrDefault(AppDbContext context)
 {
     Console.WriteLine("\nExample 2 - FirstOrDefault()");
     Console.WriteLine("----------------------------");
 
     var query = context.Students
-        .Where(e => e.Email == "notfound@student.com");
+        .Where(s => s.StudentId == 1);
 
     // Preview query shape
     PreviewSQLUsingToQueryString(query.ToQueryString());
@@ -97,58 +85,22 @@ static void Example_FirstOrDefault(AppDbContext context)
 }
 
 /// <summary>
-/// Single() expects exactly one matching row.
-/// Use it when the data must be unique.
+/// Prints student information in readable format.
 /// </summary>
-static void Example_Single(AppDbContext context)
+static void PrintStudent(dynamic? student)
 {
-    Console.WriteLine("\nExample 3 - Single()");
-    Console.WriteLine("--------------------");
-
-    // Build query first (no execution yet)
-    var query = context.Courses
-        .Where(c => c.Code == "EF-101");
-
-    // Preview query shape
-    PreviewSQLUsingToQueryString(query.ToQueryString());
-
-    // Execute query
-    // Runtime logging will show the actual executed SQL.
-    var course = query.Single();
-
-    Console.WriteLine("\nCourse Found:");
-    Console.WriteLine($"{course.CourseId} - {course.Code} - {course.Title}");
-}
-
-/// <summary>
-/// SingleOrDefault() expects zero or one matching row.
-/// Returns null if none exists, but throws if duplicates exist.
-/// </summary>
-static void Example_SingleOrDefault(AppDbContext context)
-{
-    Console.WriteLine("\nExample 4 - SingleOrDefault()");
-    Console.WriteLine("-----------------------------");
-
-    // Build query first (no execution yet)
-    var query = context.Courses
-        .Where(c => c.Code == "UNKNOWN-999");
-
-    // Preview query shape
-    PreviewSQLUsingToQueryString(query.ToQueryString());
-
-    // Execute query
-    // Runtime logging will show the actual executed SQL.
-    var course = query.SingleOrDefault();
-
-    if (course == null)
+    if (student != null)
     {
-        Console.WriteLine("\nNo course found.");
+        Console.WriteLine("\n\nStudent Found:");
+        Console.WriteLine(
+            $"{student.StudentId} - {student.FirstName} {student.LastName}");
     }
     else
     {
-        Console.WriteLine("\nCourse Found:");
-        Console.WriteLine($"{course.CourseId} - {course.Code} - {course.Title}");
+        Console.WriteLine("Student not found.");
     }
+
+    Console.WriteLine();
 }
 static void PreviewSQLUsingToQueryString(string SQLString)
 {
