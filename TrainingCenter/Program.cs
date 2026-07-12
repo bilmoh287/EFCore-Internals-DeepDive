@@ -35,39 +35,50 @@ Console.WriteLine();
 
 
 // Call examples
-GetFilteredStudents(context);
+CheckData(context);
 
-
-static void GetFilteredStudents(AppDbContext context)
+static void CheckData(AppDbContext context)
 {
-    Console.WriteLine("Filtered Projection With Sorting");
-    Console.WriteLine("--------------------------------");
+    Console.WriteLine("Any() and All() Example");
+    Console.WriteLine("-----------------------");
     Console.WriteLine();
 
-    var query = context.Students
-        .Where(s => s.Status == "Active")
-        .Select(s => new { s.StudentId, Fullname = s.FirstName + ' ' + s.LastName })
-        .OrderBy(s => s.Fullname)
-        .ThenBy(s => s.StudentId);
+    // --------------------------------------------------
+    // Any() Example
+    // --------------------------------------------------
 
+    // Build query first
+    var activeStudentsQuery = context.Students
+        .Where(s => s.Status == "Active");
 
-    // Preview SQL before execution
-    PreviewSQLUsingToQueryString(query.ToQueryString());
+    // Preview SQL query shape
+    PreviewSQLUsingToQueryString(activeStudentsQuery.ToQueryString());
+
+    bool hasActiveStudents = activeStudentsQuery.Any();
+
+    Console.WriteLine();
+    Console.WriteLine($"Has Active Students: {hasActiveStudents}");
+    Console.WriteLine();
+
+    // --------------------------------------------------
+    // All() Example
+    // --------------------------------------------------
+
+    // Build query first
+    var coursesQuery =
+        context.Courses;
+
+    // Preview SQL query shape
+    PreviewSQLUsingToQueryString(coursesQuery.ToQueryString());
 
     // Execute query
-    var students = query.ToList();
-
-    // Print resultsa
-    Console.WriteLine("\n\nStudent Names:");
-    Console.WriteLine("--------------");
-
-    foreach (var student in students)
-    {
-        Console.WriteLine($"{student.StudentId} {student.Fullname}");
-    }
+    // ToQueryString previews query shape,
+    // runtime logging shows actual executed SQL for All().
+    bool allCoursesValid =
+        coursesQuery.All(c => c.Price > 0);
 
     Console.WriteLine();
-    Console.WriteLine($"\nTotal Students: {students.Count}");
+    Console.WriteLine($"All Courses Price > 0: {allCoursesValid}");
     Console.WriteLine();
 }
 
