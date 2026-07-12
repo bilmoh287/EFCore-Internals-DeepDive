@@ -67,72 +67,47 @@ Console.WriteLine("Connected successfully.");
 Console.WriteLine();
 
 
-// Call main methods
-ShowMinMax(context);
-
-
-/// <summary>
-/// Demonstrates Min() and Max() using TrainingCenterDB.
-/// </summary>
-static void ShowMinMax(AppDbContext context)
-{
-    Console.WriteLine("Min() and Max() Example");
-    Console.WriteLine("-----------------------");
-    Console.WriteLine();
-
-    // --------------------------------------------------
-    // Lowest Course Price
-    // --------------------------------------------------
-
-    // Build query first
-    var coursePricesQuery =
-        context.Courses
-               .Select(c => c.Price);
-
-    // Preview SQL query shape
-    PreviewSQLUsingToQueryString(coursePricesQuery.ToQueryString());
-
-    // Execute query
-    // ToQueryString previews query shape,
-    // runtime logging shows actual executed SQL for Min().
-    decimal lowestPrice =
-        coursePricesQuery.Min();
-
-    // Execute query
-    // ToQueryString previews query shape,
-    // runtime logging shows actual executed SQL for Max().
-    decimal highestPrice =
-        coursePricesQuery.Max();
-
-    // --------------------------------------------------
-    // Earliest Registration Date
-    // --------------------------------------------------
-
-    // Build query first
-    var registrationDatesQuery =
-        context.Students
-               .Select(s => s.RegisteredAt);
-
-    // Preview SQL query shape
-    PreviewSQLUsingToQueryString(registrationDatesQuery.ToQueryString());
-
-    // Execute query
-    // ToQueryString previews query shape,
-    // runtime logging shows actual executed SQL for Min().
-    DateTime earliestRegistration =
-        registrationDatesQuery.Min();
-
-    // Print readable output
-    Console.WriteLine($"Lowest Course Price     : {lowestPrice}");
-    Console.WriteLine($"Highest Course Price    : {highestPrice}");
-    Console.WriteLine($"Earliest Registration   : {earliestRegistration:d}");
-    Console.WriteLine();
-}
-
-
+ShowDistinctStudentStatuses(context);
+ShowStudentsPerStatusReport(context);
 /// <summary>
 /// Displays generated SQL before execution.
 /// </summary>
+/// 
+static void ShowDistinctStudentStatuses(AppDbContext context)
+{
+    var query = context.Students
+                       .Select(s => s.Status)
+                       .Distinct();
+
+    // Preview SQL before execution
+    PreviewSQLUsingToQueryString(query.ToQueryString());
+
+    var distinctStatuses = query.ToList();
+    foreach (var status in distinctStatuses)
+    {
+        Console.WriteLine($"Distinct Status: {status}");
+    }
+}
+static void ShowStudentsPerStatusReport(AppDbContext context)
+{
+    var query = context.Students
+        .GroupBy(s => s.Status)
+        .Select(g => new
+        {
+            Status = g.Key,
+            TotalStudents = g.Count()
+        })
+        .OrderByDescending(s => s.TotalStudents);
+
+    // Preview SQL before execution
+    PreviewSQLUsingToQueryString(query.ToQueryString());
+
+    var report = query.ToList();
+    foreach (var r in report)
+    {
+        Console.WriteLine($"Report Status: {r}");
+    }
+}
 static void PreviewSQLUsingToQueryString(string SQLString)
 {
     Console.WriteLine("\nPreview SQL using ToQueryString():");
