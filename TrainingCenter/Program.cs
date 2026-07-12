@@ -35,16 +35,16 @@ Console.WriteLine();
 
 
 // Call examples
-CheckData(context);
+AggregateFuncion(context);
 
-static void CheckData(AppDbContext context)
+static void AggregateFuncion(AppDbContext context)
 {
-    Console.WriteLine("Any() and All() Example");
+    Console.WriteLine("AVG(), SUM() and COUNT() Example");
     Console.WriteLine("-----------------------");
     Console.WriteLine();
 
     // --------------------------------------------------
-    // Any() Example
+    // COUNT() Example
     // --------------------------------------------------
 
     // Build query first
@@ -54,14 +54,14 @@ static void CheckData(AppDbContext context)
     // Preview SQL query shape
     PreviewSQLUsingToQueryString(activeStudentsQuery.ToQueryString());
 
-    bool hasActiveStudents = activeStudentsQuery.Any();
+    int total = activeStudentsQuery.Count();
 
     Console.WriteLine();
-    Console.WriteLine($"Has Active Students: {hasActiveStudents}");
+    Console.WriteLine($"Total Active Students: {total}");
     Console.WriteLine();
 
     // --------------------------------------------------
-    // All() Example
+    // AVG() Example
     // --------------------------------------------------
 
     // Build query first
@@ -73,12 +73,31 @@ static void CheckData(AppDbContext context)
 
     // Execute query
     // ToQueryString previews query shape,
-    // runtime logging shows actual executed SQL for All().
-    bool allCoursesValid =
-        coursesQuery.All(c => c.Price > 0);
+    // runtime logging shows actual executed SQL for AVG().
+    decimal AveragePrice = coursesQuery.Average(c => c.Price);
 
     Console.WriteLine();
-    Console.WriteLine($"All Courses Price > 0: {allCoursesValid}");
+    Console.WriteLine($"Average Courses Price : {AveragePrice}");
+    Console.WriteLine();
+
+    // --------------------------------------------------
+    // SUM() Example
+    // --------------------------------------------------
+
+    // Build query first
+    var coursesDuration =
+        context.Courses
+        .Sum(c => c.DurationHours);
+
+    // Preview SQL query shape
+    PreviewSQLUsingToQueryString(coursesQuery.ToQueryString());
+
+    // Execute query
+    // ToQueryString previews query shape,
+    // runtime logging shows actual executed SQL for SUM().
+
+    Console.WriteLine();
+    Console.WriteLine($"SUN of Courses DurationHours : {coursesDuration}");
     Console.WriteLine();
 }
 
