@@ -133,6 +133,42 @@ static void ShowMinMax(AppDbContext context)
 /// <summary>
 /// Displays generated SQL before execution.
 /// </summary>
+/// 
+static void ShowDistinctStudentStatuses(AppDbContext context)
+{
+    var query = context.Students
+                       .Select(s => s.Status)
+                       .Distinct();
+
+    // Preview SQL before execution
+    PreviewSQLUsingToQueryString(query.ToQueryString());
+
+    var distinctStatuses = query.ToList();
+    foreach (var status in distinctStatuses)
+    {
+        Console.WriteLine($"Distinct Status: {status}");
+    }
+}
+static void ShowStudentsPerStatusReport(AppDbContext context)
+{
+    var query = context.Students
+        .GroupBy(s => s.Status)
+        .Select(g => new
+        {
+            Status = g.Key,
+            TotalStudents = g.Count()
+        })
+        .OrderBy(s => s.TotalStudents);
+
+    // Preview SQL before execution
+    PreviewSQLUsingToQueryString(query.ToQueryString());
+
+    var report = query.ToList();
+    foreach (var r in report)
+    {
+        Console.WriteLine($"Report Status: {r}");
+    }
+}
 static void PreviewSQLUsingToQueryString(string SQLString)
 {
     Console.WriteLine("\nPreview SQL using ToQueryString():");
