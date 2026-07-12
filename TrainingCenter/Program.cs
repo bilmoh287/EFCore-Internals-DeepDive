@@ -35,13 +35,20 @@ Console.WriteLine();
 
 
 // Call examples
-GetStudentNames(context);
+GetFilteredStudents(context);
 
 
-static void GetStudentNames(AppDbContext context)
+static void GetFilteredStudents(AppDbContext context)
 {
+    Console.WriteLine("Filtered Projection With Sorting");
+    Console.WriteLine("--------------------------------");
+    Console.WriteLine();
+
     var query = context.Students
-        .Select(s => new { s.FirstName, s.LastName });
+        .Where(s => s.Status == "Active")
+        .Select(s => new { s.StudentId, Fullname = s.FirstName + ' ' + s.LastName })
+        .OrderBy(s => s.Fullname)
+        .ThenBy(s => s.StudentId);
 
 
     // Preview SQL before execution
@@ -56,7 +63,7 @@ static void GetStudentNames(AppDbContext context)
 
     foreach (var student in students)
     {
-        Console.WriteLine($"{student.FirstName} {student.LastName}");
+        Console.WriteLine($"{student.StudentId} {student.Fullname}");
     }
 
     Console.WriteLine();
