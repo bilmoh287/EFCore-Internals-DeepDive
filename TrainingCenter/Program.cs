@@ -92,6 +92,7 @@ static void ShowStudentsPerStatusReport(AppDbContext context)
 {
     var query = context.Students
         .GroupBy(s => s.Status)
+        .Where(g => g.Count() > 6)
         .Select(g => new
         {
             Status = g.Key,
