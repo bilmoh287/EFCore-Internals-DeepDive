@@ -55,96 +55,50 @@ Console.WriteLine("Connected successfully.");
 Console.WriteLine();
 
 // Call main method
-ShowStudentEnrollmentsUsingSelectMany(context);
-ShowStudentEnrollmentsUsingSelect(context);
+ShowExpensiveCourses(context);
 
 
 /// <summary>
-/// Shows student enrollments by flattening Students -> Enrollments using SelectMany().
+/// Shows courses priced above the average course price using a subquery.
 /// </summary>
-static void ShowStudentEnrollmentsUsingSelectMany(AppDbContext context)
+static void ShowExpensiveCourses(AppDbContext context)
 {
-    Console.WriteLine("Student Enrollments Using SelectMany()");
-    Console.WriteLine("--------------------------------------");
+    Console.WriteLine("Courses Priced Above Average");
+    Console.WriteLine("----------------------------");
     Console.WriteLine();
 
     // Build query first
-    var query = context.Students
-        .SelectMany(
-            student => student.Enrollments,
-            (student, enrollment) => new
-            {
-                student.StudentId,
-                StudentName = student.FirstName + " " + student.LastName,
-                enrollment.CourseId,
-                enrollment.Status
-            })
-        .OrderBy(x => x.StudentId);
+    var query = context.Courses
+        .Where(c => c.Price >
+            context.Courses.Average(c => c.Price)
+        )
+        .OrderBy(x => x.Price);
 
     // Preview SQL before execution
     PreviewSQLUsingToQueryString(query.ToQueryString());
 
     // Execute query
-    var report = query.ToList();
+    // ToQueryString previews query shape,
+    // runtime logging shows actual executed SQL for Average().
+    var courses = query.ToList();
 
-    Console.WriteLine("Student Course Registrations:");
-    Console.WriteLine("-----------------------------");
+    // Print readable output
+    Console.WriteLine("\nExpensive Courses:");
+    Console.WriteLine("------------------");
+
+
     Console.WriteLine();
-
-    foreach (var row in report)
+    foreach (var course in courses)
     {
         Console.WriteLine(
-            $"{row.StudentId} - {row.StudentName} - Course: {row.CourseId} - {row.Status}");
+            $"{course.Code} - {course.Title} - {course.Price}");
     }
 
     Console.WriteLine();
-    Console.WriteLine($"Total Registrations: {report.Count}");
+    Console.WriteLine($"Total Courses: {courses.Count}");
 }
 
-static void ShowStudentEnrollmentsUsingSelect(AppDbContext context)
-{
-    Console.WriteLine("Students With Their Courses - Select()");
-    Console.WriteLine("---------------------------------------");
-    Console.WriteLine();
 
-    // Build query first
-    var query =
-        context.Students
-               .Select(s => new
-               {
-                   StudentId = s.StudentId,
-                   StudentName = s.FirstName + " " + s.LastName,
-
-                   Courses = s.Enrollments
-                              .Select(e => e.Course.Title)
-                              .ToList()
-               })
-               .OrderBy(s => s.StudentId);
-
-    // Preview SQL before execution
-    PreviewSQLUsingToQueryString(query.ToQueryString());
-
-    // Execute query
-    var students = query.ToList();
-
-    Console.WriteLine("Student Report:");
-    Console.WriteLine("---------------");
-    Console.WriteLine();
-
-    foreach (var student in students)
-    {
-        Console.WriteLine($"{student.StudentId} - {student.StudentName}");
-
-        foreach (var course in student.Courses)
-        {
-            Console.WriteLine($"   • {course}");
-        }
-
-        Console.WriteLine();
-    }
-
-    Console.WriteLine($"Total Students: {students.Count}");
-}
 /// <summary>
 /// Displays generated SQL before execution.
 /// </summary>
