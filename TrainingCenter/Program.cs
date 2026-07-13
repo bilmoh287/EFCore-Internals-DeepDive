@@ -21,6 +21,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using TrainingCenter.Data;
+using TrainingCenter.Entities;
 
 // Configuration setup
 IConfiguration configuration = new ConfigurationBuilder()
@@ -62,35 +63,44 @@ ShowStudentsWithEnrollmentsAndCourses(context);
 /// </summary>
 static void ShowStudentsWithEnrollmentsAndCourses(AppDbContext context)
 {
+    Console.WriteLine("Course Report Using Join()");
+    Console.WriteLine("--------------------------");
+    Console.WriteLine();
+
     // Build query first
-    var query = context.Students
-        .Include(s => s.Enrollments)
-            .ThenInclude(e => e.Course)
-        .OrderBy(s => s.StudentId);
+    var query = context.Courses
+        .Join(
+            context.Instructors,
+            course => course.InstructorId,
+            Instructor => Instructor.InstructorId,
+            (course, Instructor) => new
+            {
+                course.Title,
+                course.Code,
+                InstructorName =
+                           Instructor.FirstName + " " + Instructor.LastName
+            })
+        .OrderBy(x => x.Title);
 
     // Preview SQL before execution
     PreviewSQLUsingToQueryString(query.ToQueryString());
 
     // Execute query
-    var students = query.ToList();
+    var report = query.ToList();
 
-    Console.WriteLine("\nStudents With Enrollments and Courses:");
-    Console.WriteLine("--------------------------------------");
+    // Print readable output
+    Console.WriteLine("Courses With Instructors:");
+    Console.WriteLine("-------------------------");
 
-    foreach (var student in students)
+    Console.WriteLine();
+    foreach (var row in report)
     {
-        Console.WriteLine($"{student.StudentId} - {student.FirstName} {student.LastName}");
-
-        foreach (var enrollment in student.Enrollments)
-        {
-            Console.WriteLine(
-                $"   Course: {enrollment.Course.Title}, " +
-                $"Status: {enrollment.Status}, " +
-                $"Progress: {enrollment.ProgressPercent}%");
-        }
-
-        Console.WriteLine();
+        Console.WriteLine(
+            $"{row.Code} - {row.Title} - {row.InstructorName}");
     }
+
+    Console.WriteLine();
+    Console.WriteLine($"Total Courses: {report.Count}");
 }
 
 
