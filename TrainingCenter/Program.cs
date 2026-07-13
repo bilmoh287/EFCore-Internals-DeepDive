@@ -55,59 +55,62 @@ Console.WriteLine("Connected successfully.");
 Console.WriteLine();
 
 // Call main method
-ShowStudentsWithEnrollmentsAndCourses(context);
+ShowStudentsWithAndWithoutProfile(context);
 
 
 /// <summary>
 /// Loads students with their enrollments and related courses.
 /// </summary>
-static void ShowStudentsWithEnrollmentsAndCourses(AppDbContext context)
+static void ShowStudentsWithAndWithoutProfile(AppDbContext context)
 {
-    Console.WriteLine("Course Report Using Join()");
-    Console.WriteLine("--------------------------");
+    Console.WriteLine("Students With Profiles - Left Join");
+    Console.WriteLine("----------------------------------");
     Console.WriteLine();
 
     // Build query first
-    var query = context.Courses
-        .Join(
-            context.Instructors,
-            course => course.InstructorId,
-            Instructor => Instructor.InstructorId,
-            (course, Instructor) => new
-            {
-                course.Title,
-                course.Code,
-                InstructorName =
-                           Instructor.FirstName + " " + Instructor.LastName
-            })
-        .OrderBy(x => x.Title);
+    var report =
+        from s in context.Students
+        join p in context.StudentProfiles
+            on s.StudentId equals p.StudentId
+            into ProfileFroup
+        from p in ProfileFroup.DefaultIfEmpty()
+        select new
+        {
+            s.StudentId,
+            StudentName = s.FirstName + " " + s.LastName,
+            Country = p.Country != null ? p.Country : "No Profile",
+            City = p.City != null ? p.City : "No Profile"
+        };
+
+    // Apply sorting
+    var query =
+        report.OrderBy(x => x.StudentId);
 
     // Preview SQL before execution
     PreviewSQLUsingToQueryString(query.ToQueryString());
 
     // Execute query
-    var report = query.ToList();
+    var result = query.ToList();
 
     // Print readable output
-    Console.WriteLine("Courses With Instructors:");
-    Console.WriteLine("-------------------------");
+    Console.WriteLine("Student Report:");
+    Console.WriteLine("---------------");
 
     Console.WriteLine();
-    foreach (var row in report)
+    foreach (var row in result)
     {
         Console.WriteLine(
-            $"{row.Code} - {row.Title} - {row.InstructorName}");
+            $"{row.StudentId} - {row.StudentName} - {row.City} - {row.Country}");
     }
 
     Console.WriteLine();
-    Console.WriteLine($"Total Courses: {report.Count}");
+    Console.WriteLine($"Total Students: {result.Count}");
 }
 
-
-/// <summary>
-/// Displays generated SQL before execution.
-/// </summary>
-static void PreviewSQLUsingToQueryString(string SQLString)
+    /// <summary>
+    /// Displays generated SQL before execution.
+    /// </summary>
+    static void PreviewSQLUsingToQueryString(string SQLString)
 {
     Console.WriteLine("\nPreview SQL using ToQueryString():");
     Console.WriteLine("----------------------------------");
