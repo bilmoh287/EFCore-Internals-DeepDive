@@ -229,3 +229,126 @@
 //    Console.WriteLine(SQLString);
 //    Console.WriteLine();
 //}
+
+
+
+
+
+using TrainingCenter.Data;
+
+///*
+//static void MoreExamplesOnBestApproches(AppDbContext context)
+//{
+//    var students =
+//    context.Students
+//           .Select(s => new
+//           {
+//               FullName = s.FirstName + " " + s.LastName,
+//               City = s.StudentProfile.City
+//           })
+//           .ToList();
+
+//    Console.WriteLine();
+//    Console.WriteLine("Example of Student and Profile");
+//    foreach (var student in students)
+//    {
+//        Console.WriteLine(
+//            $"{student.FullName}  - {student.City}");
+//    }
+//    Console.WriteLine();
+
+//    var TeachersTeaches = context.Instructors
+//        .Select(s => new
+//        {
+//            s.FirstName,
+//            TeachingCourses = s.Courses.Count()
+//        })
+//        .OrderBy(s => s.FirstName)
+//        .ToList();
+
+//    Console.WriteLine();
+//    Console.WriteLine("Example of Instructors Teaching Courses");
+//    Console.WriteLine();
+
+//    foreach (var Instructor in TeachersTeaches)
+//    {
+//        Console.WriteLine(
+//            $"{Instructor.FirstName} Teaches =  {Instructor.TeachingCourses}");
+//    }
+//    Console.WriteLine();
+
+//    var Courses = context.Courses
+//    .Select(c => new
+//    {
+//        c.Title,
+//        InstructorName = c.Instructor.FirstName
+//    })
+//    .ToList();
+
+//    Console.WriteLine();
+//    Console.WriteLine("Example of Courses List with Instructore");
+//    Console.WriteLine();
+
+//    foreach (var course in Courses)
+//    {
+//        Console.WriteLine(
+//            $"{course.Title} \nInstructor:  {course.InstructorName}");
+//        Console.WriteLine();
+//    }
+//    Console.WriteLine();
+
+//    var EnrollmentList = context.Enrollments
+//        .Select(E => new
+//        {
+//            Student = E.Student.FirstName,
+//            Course = E.Course.Title,
+//            E.EnrollmentDate,
+
+//        })
+//        .OrderBy(E => E.EnrollmentDate)
+//        .ToList();
+
+//    Console.WriteLine();
+//    Console.WriteLine("Example of Students Enrollment in Courses");
+//    Console.WriteLine();
+
+//    foreach (var E in EnrollmentList)
+//    {
+//        Console.WriteLine(
+//            $"{E.Student} Enrolled in: {E.Course} at: {E.EnrollmentDate}");
+//        Console.WriteLine();
+//    }
+//    Console.WriteLine();
+
+//    var query =
+//        context.Enrollments
+//               .GroupBy(e => new
+//               {
+//                   StudentName =
+//                       e.Student.FirstName + " " + e.Student.LastName,
+
+//                   CourseTitle =
+//                       e.Course.Title
+//               })
+//               .Select(g => new
+//               {
+//                   g.Key.StudentName,
+//                   g.Key.CourseTitle,
+//                   TimesEnrolled = g.Count()
+//               })
+//               .OrderBy(e => e.StudentName);
+
+//    PreviewSQLUsingToQueryString(query.ToQueryString());
+//    var result = query.ToList();
+
+//    Console.WriteLine();
+//    Console.WriteLine("Example of Students Enrollment Times in a course");
+//    Console.WriteLine();
+
+//    foreach (var item in result)
+//    {
+//        Console.WriteLine(
+//            $"{item.StudentName,-10} {item.CourseTitle,-15} {item.TimesEnrolled}");
+//    }
+//    Console.WriteLine();
+//}
