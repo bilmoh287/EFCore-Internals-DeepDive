@@ -3,16 +3,16 @@
 Code Overview
 --------------------------------------------------------
 Purpose:
-- Demonstrate Include()
-- Demonstrate ThenInclude()
-- Load related data from TrainingCenterDB
-- Preview SQL using ToQueryString()
-- Enable runtime logging
+- Demonstrate pagination in EF Core using Skip() and Take()
+- Compare BAD vs GOOD pagination approaches
+- Show generated SQL before execution
+- Prove that loading everything first is inefficient
 
 Key Points:
-- Include() loads first-level related data
-- ThenInclude() loads deeper related data
-- ToQueryString previews query shape
+- BAD = load all rows, then paginate in memory
+- GOOD = paginate directly in the database
+- OrderBy() is required before Skip() and Take()
+- ToQueryString() previews SQL query shape
 - Runtime logging shows actual executed SQL
 ========================================================
 */
@@ -21,26 +21,29 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using TrainingCenter.Data;
-using TrainingCenter.Entities;
+
 
 // Configuration setup
 IConfiguration configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: false)
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .Build();
+
 
 // Read connection string
 string? connectionString =
     configuration.GetConnectionString("DefaultConnection");
 
+
 // Validate values
 if (string.IsNullOrWhiteSpace(connectionString))
 {
-    Console.WriteLine("Connection string not found.");
+    Console.WriteLine("Connection string 'DefaultConnection' was not found.");
     return;
 }
 
-// Create options with logging
+
+// Create options
 var options =
     new DbContextOptionsBuilder<AppDbContext>()
         .UseSqlServer(connectionString)
@@ -48,54 +51,144 @@ var options =
         .EnableSensitiveDataLogging()
         .Options;
 
+
 // Create context
 using var context = new AppDbContext(options);
 
-Console.WriteLine("Connected successfully.");
+
+// Test connection if relevant
+if (!context.Database.CanConnect())
+{
+    Console.WriteLine("Could not connect to TrainingCenterDB.");
+    return;
+}
+
+Console.WriteLine("Connected successfully to TrainingCenterDB.");
 Console.WriteLine();
 
-// Call main method
-ShowExpensiveCourses(context);
+
+// Call main methods
+ComparePagination(context);
 
 
 /// <summary>
-/// Shows courses priced above the average course price using a subquery.
+/// Demonstrates bad vs good pagination using Skip() and Take().
 /// </summary>
-static void ShowExpensiveCourses(AppDbContext context)
+static void ComparePagination(AppDbContext context)
 {
-    Console.WriteLine("Courses Priced Above Average");
-    Console.WriteLine("----------------------------");
+    int pageNumber = 2;
+    int pageSize = 5;
+
+    ShowBadPaginationApproach(context, pageNumber, pageSize);
+
+    PrintSeparator();
+
+    ShowGoodPaginationApproach(context, pageNumber, pageSize);
+}
+
+
+/// <summary>
+/// Demonstrates bad pagination by loading all rows first,
+/// then applying pagination in memory.
+/// </summary>
+static void ShowBadPaginationApproach(
+    AppDbContext context,
+    int pageNumber,
+    int pageSize)
+{
+    Console.WriteLine("BAD APPROACH - Load Everything, Then Paginate");
+    Console.WriteLine("--------------------------------------------");
     Console.WriteLine();
 
     // Build query first
-    var query = context.Courses
-        .Where(c => c.Price >
-            context.Courses.Average(c => c.Price)
-        )
-        .OrderBy(x => x.Price);
+    var badQuery =
+        context.Students;
 
-    // Preview SQL before execution
-    PreviewSQLUsingToQueryString(query.ToQueryString());
+    // Preview SQL query shape
+    PreviewSQLUsingToQueryString(badQuery.ToQueryString());
 
-    // Execute query
-    // ToQueryString previews query shape,
-    // runtime logging shows actual executed SQL for Average().
-    var courses = query.ToList();
+    // Execute query and load ALL students into memory
+    var allStudents = badQuery.ToList();
 
-    // Print readable output
-    Console.WriteLine("\nExpensive Courses:");
-    Console.WriteLine("------------------");
+    Console.WriteLine($"Total Loaded Rows: {allStudents.Count}");
+    Console.WriteLine("All rows were loaded into memory.");
+    Console.WriteLine();
 
+    // Pagination happens in memory here, not in SQL Server
+    var badPage =
+        allStudents
+            .OrderBy(s => s.StudentId)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+    Console.WriteLine($"Page {pageNumber} Results - BAD:");
+    Console.WriteLine("--------------------------");
 
     Console.WriteLine();
-    foreach (var course in courses)
+    foreach (var student in badPage)
     {
         Console.WriteLine(
-            $"{course.Code} - {course.Title} - {course.Price}");
+            $"{student.StudentId} - {student.FirstName} {student.LastName}");
     }
 
     Console.WriteLine();
-    Console.WriteLine($"Total Courses: {courses.Count}");
+    Console.WriteLine(
+        "Only a few records are displayed, but the entire table was loaded first.");
+    Console.WriteLine();
+}
+
+
+/// <summary>
+/// Demonstrates good pagination by applying OrderBy(), Skip(),
+/// and Take() directly in the database query.
+/// </summary>
+static void ShowGoodPaginationApproach(
+    AppDbContext context,
+    int pageNumber,
+    int pageSize)
+{
+    Console.WriteLine("GOOD APPROACH - Paginate In The Database");
+    Console.WriteLine("----------------------------------------");
+    Console.WriteLine();
+
+    // Build query first
+    var goodQuery =
+        context.Students
+               .OrderBy(s => s.StudentId)
+               .Skip((pageNumber - 1) * pageSize)
+               .Take(pageSize);
+
+    // Preview SQL query shape
+    PreviewSQLUsingToQueryString(goodQuery.ToQueryString());
+
+    // Execute query and load ONLY the required page
+    var goodPage = goodQuery.ToList();
+
+    Console.WriteLine($"Page {pageNumber} Results - GOOD:");
+    Console.WriteLine("---------------------------");
+
+    Console.WriteLine();
+    foreach (var student in goodPage)
+    {
+        Console.WriteLine(
+            $"{student.StudentId} - {student.FirstName} {student.LastName}");
+    }
+
+    Console.WriteLine();
+    Console.WriteLine($"Loaded Rows: {goodPage.Count}");
+    Console.WriteLine("Only the required page rows were loaded from the database.");
+    Console.WriteLine();
+}
+
+
+/// <summary>
+/// Prints a separator between examples.
+/// </summary>
+static void PrintSeparator()
+{
+    Console.WriteLine(new string('-', 60));
+    Console.WriteLine();
 }
 
 
