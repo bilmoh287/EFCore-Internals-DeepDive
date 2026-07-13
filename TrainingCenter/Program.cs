@@ -55,62 +55,100 @@ Console.WriteLine("Connected successfully.");
 Console.WriteLine();
 
 // Call main method
-ShowStudentsWithAndWithoutProfile(context);
+ShowStudentEnrollmentsUsingSelectMany(context);
+ShowStudentEnrollmentsUsingSelect(context);
 
 
 /// <summary>
-/// Loads students with their enrollments and related courses.
+/// Shows student enrollments by flattening Students -> Enrollments using SelectMany().
 /// </summary>
-static void ShowStudentsWithAndWithoutProfile(AppDbContext context)
+static void ShowStudentEnrollmentsUsingSelectMany(AppDbContext context)
 {
-    Console.WriteLine("Students With Profiles - Left Join");
-    Console.WriteLine("----------------------------------");
+    Console.WriteLine("Student Enrollments Using SelectMany()");
+    Console.WriteLine("--------------------------------------");
     Console.WriteLine();
 
     // Build query first
-    var report =
-        from s in context.Students
-        join p in context.StudentProfiles
-            on s.StudentId equals p.StudentId
-            into ProfileFroup
-        from p in ProfileFroup.DefaultIfEmpty()
-        select new
-        {
-            s.StudentId,
-            StudentName = s.FirstName + " " + s.LastName,
-            Country = p.Country != null ? p.Country : "No Profile",
-            City = p.City != null ? p.City : "No Profile"
-        };
-
-    // Apply sorting
-    var query =
-        report.OrderBy(x => x.StudentId);
+    var query = context.Students
+        .SelectMany(
+            student => student.Enrollments,
+            (student, enrollment) => new
+            {
+                student.StudentId,
+                StudentName = student.FirstName + " " + student.LastName,
+                enrollment.CourseId,
+                enrollment.Status
+            })
+        .OrderBy(x => x.StudentId);
 
     // Preview SQL before execution
     PreviewSQLUsingToQueryString(query.ToQueryString());
 
     // Execute query
-    var result = query.ToList();
+    var report = query.ToList();
 
-    // Print readable output
-    Console.WriteLine("Student Report:");
-    Console.WriteLine("---------------");
-
+    Console.WriteLine("Student Course Registrations:");
+    Console.WriteLine("-----------------------------");
     Console.WriteLine();
-    foreach (var row in result)
+
+    foreach (var row in report)
     {
         Console.WriteLine(
-            $"{row.StudentId} - {row.StudentName} - {row.City} - {row.Country}");
+            $"{row.StudentId} - {row.StudentName} - Course: {row.CourseId} - {row.Status}");
     }
 
     Console.WriteLine();
-    Console.WriteLine($"Total Students: {result.Count}");
+    Console.WriteLine($"Total Registrations: {report.Count}");
 }
 
-    /// <summary>
-    /// Displays generated SQL before execution.
-    /// </summary>
-    static void PreviewSQLUsingToQueryString(string SQLString)
+static void ShowStudentEnrollmentsUsingSelect(AppDbContext context)
+{
+    Console.WriteLine("Students With Their Courses - Select()");
+    Console.WriteLine("---------------------------------------");
+    Console.WriteLine();
+
+    // Build query first
+    var query =
+        context.Students
+               .Select(s => new
+               {
+                   StudentId = s.StudentId,
+                   StudentName = s.FirstName + " " + s.LastName,
+
+                   Courses = s.Enrollments
+                              .Select(e => e.Course.Title)
+                              .ToList()
+               })
+               .OrderBy(s => s.StudentId);
+
+    // Preview SQL before execution
+    PreviewSQLUsingToQueryString(query.ToQueryString());
+
+    // Execute query
+    var students = query.ToList();
+
+    Console.WriteLine("Student Report:");
+    Console.WriteLine("---------------");
+    Console.WriteLine();
+
+    foreach (var student in students)
+    {
+        Console.WriteLine($"{student.StudentId} - {student.StudentName}");
+
+        foreach (var course in student.Courses)
+        {
+            Console.WriteLine($"   • {course}");
+        }
+
+        Console.WriteLine();
+    }
+
+    Console.WriteLine($"Total Students: {students.Count}");
+}
+/// <summary>
+/// Displays generated SQL before execution.
+/// </summary>
+static void PreviewSQLUsingToQueryString(string SQLString)
 {
     Console.WriteLine("\nPreview SQL using ToQueryString():");
     Console.WriteLine("----------------------------------");
